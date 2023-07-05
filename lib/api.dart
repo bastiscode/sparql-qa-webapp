@@ -1,5 +1,8 @@
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
+import 'package:url_launcher/url_launcher.dart';
+import 'package:webapp/colors.dart';
 import 'dart:convert';
 
 import 'package:webapp/components/message.dart';
@@ -48,13 +51,72 @@ class Runtime {
 class ModelOutput {
   List<String> raw;
   List<String>? sparql;
+  ExecutionResult? execution;
   Runtime runtime;
+
+  bool get hasSparql => sparql != null;
+
+  bool get hasExecution => execution != null;
 
   ModelOutput(
     this.raw,
     this.runtime, {
     this.sparql,
+    this.execution,
   });
+}
+
+class Record {
+  String type;
+  String value;
+
+  Record(this.type, this.value);
+
+  Widget toWidget() {
+    switch (type) {
+      case "literal":
+        return Text(
+          value,
+          overflow: TextOverflow.ellipsis,
+        );
+      case "uri":
+        {
+          final name = value.split("/").last;
+          return Row(
+            children: [
+              MouseRegion(
+                cursor: SystemMouseCursors.click,
+                child: GestureDetector(
+                  child: Text(
+                    name,
+                    style: const TextStyle(color: uniBlue),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  onTap: () async {
+                    final _ = await launchUrl(Uri.parse(value));
+                  },
+                ),
+              ),
+            ],
+          );
+        }
+      default:
+        return Text(
+          value,
+          overflow: TextOverflow.ellipsis,
+        );
+    }
+  }
+}
+
+class ExecutionResult {
+  List<String> vars;
+  List<Map<String, Record?>> results;
+
+  ExecutionResult(
+    this.vars,
+    this.results,
+  );
 }
 
 class Api {
@@ -141,6 +203,40 @@ class Api {
     }
   }
 
+  Future<ApiResult<ExecutionResult>> execute(String sparql) async {
+    final sparqlEnc = Uri.encodeQueryComponent(sparql);
+    final res = await http.get(
+      Uri.parse(
+        "https://qlever.cs.uni-freiburg.de/api/wikidata?query=$sparqlEnc",
+      ),
+    );
+    final json = jsonDecode(res.body);
+    if (res.statusCode != 200) {
+      return ApiResult(res.statusCode,
+          message: json["exception"] ?? "unknown exception");
+    }
+    List<String> vars = json["head"]["vars"].cast<String>();
+    List<Map<String, Record?>> results = [];
+    for (final binding in json["results"]["bindings"]) {
+      Map<String, Record?> result = {};
+      for (final vr in vars) {
+        final vrBinding = binding[vr];
+        if (vrBinding == null) {
+          result[vr] = null;
+          continue;
+        }
+        final type = vrBinding["type"];
+        final value = vrBinding["value"];
+        result[vr] = Record(type, value);
+      }
+      results.add(result);
+    }
+    return ApiResult(
+      res.statusCode,
+      value: ExecutionResult(vars, results),
+    );
+  }
+
   Future<ApiResult<dynamic>> _post(
     String url,
     dynamic data,
@@ -180,13 +276,27 @@ class Api {
           message: "model failed: ${res.message}",
         );
       }
+      List<String>? sparql = res.value["sparql"]?.cast<String>();
+      ExecutionResult? execution;
+      if (sparql != null) {
+        assert(sparql.length == 1);
+        final res = await execute(sparql.first);
+        if (res.statusCode != 200) {
+          return ApiResult(
+            res.statusCode,
+            message: "execution failed: ${res.message}",
+          );
+        }
+        execution = res.value!;
+      }
       final output = ModelOutput(
         res.value["raw"].cast<String>(),
         Runtime.fromJson(
           res.value["runtime"],
           stop.elapsedMicroseconds / 1e6,
         ),
-        sparql: res.value["sparql"]?.cast<String>(),
+        sparql: sparql,
+        execution: execution,
       );
       return ApiResult(200, value: output);
     } catch (e) {

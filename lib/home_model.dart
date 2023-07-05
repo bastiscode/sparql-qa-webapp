@@ -96,8 +96,8 @@ class HomeModel extends BaseModel {
     notifyListeners();
     final inputLines = inputString.trimRight().split("\n").toList();
     final result = await api.runPipeline(
-        inputLines,
-        model!,
+      inputLines,
+      model!,
       hq,
     );
     if (result.statusCode == 200) {

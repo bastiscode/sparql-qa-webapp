@@ -61,7 +61,7 @@ class _HomeViewState extends State<HomeView> {
         if (!success) {
           showMessage(
             context,
-            Message("Could not open $address", Status.error),
+            Message("could not open $address", Status.error),
           );
         }
       }
@@ -144,9 +144,6 @@ class _HomeViewState extends State<HomeView> {
 
   Widget buildLinks() {
     return Card(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-      ),
       elevation: 2,
       clipBehavior: Clip.antiAlias,
       margin: EdgeInsets.zero,
@@ -154,9 +151,7 @@ class _HomeViewState extends State<HomeView> {
         maintainState: true,
         initiallyExpanded: false,
         controlAffinity: ListTileControlAffinity.leading,
-        title: const Text(
-          "Additional material",
-        ),
+        title: const Text("Additional material"),
         childrenPadding: const EdgeInsets.symmetric(
           vertical: 8,
           horizontal: 16,
@@ -192,9 +187,6 @@ class _HomeViewState extends State<HomeView> {
     final validPresets =
         presets.where((preset) => model.isValidPreset(preset)).toList();
     return Card(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(8),
-      ),
       margin: EdgeInsets.zero,
       elevation: 2,
       clipBehavior: Clip.antiAlias,
@@ -468,7 +460,6 @@ class _HomeViewState extends State<HomeView> {
 
   Widget buildInputOutput(HomeModel model) {
     return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
       elevation: 2,
       margin: EdgeInsets.zero,
       child: Padding(
@@ -500,44 +491,75 @@ class _HomeViewState extends State<HomeView> {
         Card(
           margin: EdgeInsets.zero,
           elevation: 2,
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text("Generation"),
+          clipBehavior: Clip.antiAlias,
+          child: ExpansionTile(
+            initiallyExpanded: false,
+            controlAffinity: ListTileControlAffinity.leading,
+            title: const Text("Detailed outputs"),
+            childrenPadding: const EdgeInsets.symmetric(
+              vertical: 8,
+              horizontal: 16,
+            ),
+            expandedCrossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text("Generation"),
+              const Divider(
+                height: 2,
+                color: uniBlue,
+              ),
+              const SizedBox(height: 8),
+              Text(model.output!.raw.join("\n")),
+              if (model.output!.hasSparql) ...[
+                const SizedBox(height: 16),
+                const Text("SPARQL"),
                 const Divider(
                   height: 2,
                   color: uniBlue,
                 ),
                 const SizedBox(height: 8),
-                Text(model.output!.raw.join("\n")),
+                Text(model.output!.sparql!.join("\n")),
               ],
-            ),
+              const SizedBox(height: 8),
+            ],
           ),
         ),
-        if (model.output!.sparql != null) ...[
-          const SizedBox(height: 8),
-          Card(
-            margin: EdgeInsets.zero,
-            elevation: 2,
-            child: Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text("SPARQL"),
-                  const Divider(
-                    height: 2,
-                    color: uniBlue,
-                  ),
-                  const SizedBox(height: 8),
-                  Text(model.output!.sparql!.join("\n")),
-                ],
-              ),
-            ),
-          )
-        ]
+        const SizedBox(height: 8),
+        Card(
+          margin: EdgeInsets.zero,
+          elevation: 2,
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: model.output!.hasExecution
+                ? resultTable(model.output!.execution!)
+                : const Text("No execution"),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget resultTable(ExecutionResult execution) {
+    return Table(
+      children: [
+        TableRow(
+          children: execution.vars
+              .map((v) => Text(
+                    v,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ))
+              .toList(),
+        ),
+        ...execution.results.map((result) {
+          return TableRow(
+            children: execution.vars
+                .map((v) => (result[v]?.toWidget() ?? const Text("-")))
+                .toList(),
+          );
+        }),
       ],
     );
   }
