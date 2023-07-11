@@ -50,6 +50,8 @@ class HomeModel extends BaseModel {
 
   bool hideModel = false;
 
+  bool sc = false;
+
   bool hq = true;
 
   Future<void> init(
@@ -98,6 +100,7 @@ class HomeModel extends BaseModel {
     final result = await api.runPipeline(
       inputLines,
       model!,
+      sc,
       hq,
     );
     if (result.statusCode == 200) {

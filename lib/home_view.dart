@@ -411,6 +411,21 @@ class _HomeViewState extends State<HomeView> {
                 ),
                 IconButton(
                     icon: Icon(
+                      model.sc
+                          ? Icons.spellcheck
+                          : Icons.spellcheck_outlined,
+                    ),
+                    tooltip: "${model.sc ? "Disable" : "Enable"} spell checking",
+                    splashRadius: 16,
+                    onPressed: () {
+                      setState(
+                            () {
+                          model.sc = !model.sc;
+                        },
+                      );
+                    }),
+                IconButton(
+                    icon: Icon(
                       model.hq
                           ? Icons.high_quality
                           : Icons.high_quality_outlined,
@@ -502,13 +517,21 @@ class _HomeViewState extends State<HomeView> {
             ),
             expandedCrossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
-              const Text("Generation"),
+              const Text("Input"),
               const Divider(
                 height: 2,
                 color: uniBlue,
               ),
               const SizedBox(height: 8),
-              Text(model.output!.raw.join("\n")),
+              Text(model.output!.input.join("\n")),
+              const SizedBox(height: 16),
+              const Text("Output"),
+              const Divider(
+                height: 2,
+                color: uniBlue,
+              ),
+              const SizedBox(height: 8),
+              Text(model.output!.output.join("\n")),
               if (model.output!.hasSparql) ...[
                 const SizedBox(height: 16),
                 const Text("SPARQL"),

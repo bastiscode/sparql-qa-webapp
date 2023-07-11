@@ -49,7 +49,8 @@ class Runtime {
 }
 
 class ModelOutput {
-  List<String> raw;
+  List<String> input;
+  List<String> output;
   List<String>? sparql;
   ExecutionResult? execution;
   Runtime runtime;
@@ -59,7 +60,8 @@ class ModelOutput {
   bool get hasExecution => execution != null;
 
   ModelOutput(
-    this.raw,
+    this.input,
+    this.output,
     this.runtime, {
     this.sparql,
     this.execution,
@@ -203,6 +205,31 @@ class Api {
     }
   }
 
+  Future<ApiResult<List<String>>> correct(List<String> questions) async {
+    final pipeline = Uri.encodeComponent(
+      ",,transformer with whitespace correction nmt",
+    );
+    final res = await http.post(
+      Uri.parse(
+        "https://spelling-correction.cs.uni-freiburg.de/api/run"
+        "?pipeline=$pipeline",
+      ),
+      body: {"text": questions.join("\n")},
+    );
+    if (res.statusCode != 200) {
+      return ApiResult(
+        res.statusCode,
+        message: "failed to correct $questions",
+      );
+    } else {
+      final json = jsonDecode(res.body);
+      return ApiResult(
+        res.statusCode,
+        value: json["output"]["sec"]["text"].cast<String>(),
+      );
+    }
+  }
+
   Future<ApiResult<ExecutionResult>> execute(String sparql) async {
     final sparqlEnc = Uri.encodeQueryComponent(sparql);
     final res = await http.get(
@@ -256,10 +283,21 @@ class Api {
   Future<ApiResult<ModelOutput>> runPipeline(
     List<String> input,
     String model,
+    bool correctFirst,
     bool highQuality,
   ) async {
     try {
       final stop = Stopwatch()..start();
+      if (correctFirst) {
+        final res = await correct(input);
+        if (res.statusCode != 200) {
+          return ApiResult(
+            res.statusCode,
+            message: "correction failed: ${res.message}",
+          );
+        }
+        input = res.value!;
+      }
       var data = {
         "questions": input,
         "model": model,
@@ -290,6 +328,7 @@ class Api {
         execution = res.value!;
       }
       final output = ModelOutput(
+        input,
         res.value["raw"].cast<String>(),
         Runtime.fromJson(
           res.value["runtime"],
