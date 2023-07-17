@@ -3,7 +3,7 @@ import 'dart:collection';
 
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:webapp/api.dart';
+import 'package:webapp/api.dart' as A;
 import 'package:webapp/base_model.dart';
 import 'package:webapp/components/message.dart';
 import 'package:webapp/components/presets.dart';
@@ -12,10 +12,10 @@ import 'package:webapp/utils.dart';
 class HomeModel extends BaseModel {
   static const maxLiveLength = 512;
 
-  BackendInfo? backendInfo;
-  List<ModelInfo> modelInfos = [];
+  A.BackendInfo? backendInfo;
+  List<A.ModelInfo> modelInfos = [];
   String? model;
-  ModelOutput? output;
+  A.ModelOutput? output;
 
   List<String> input = [];
   int _inputBytes = 0;
@@ -53,18 +53,22 @@ class HomeModel extends BaseModel {
   bool sc = false;
 
   bool hq = true;
+  
+  A.Feedback? feedback;
+  
+  bool get gaveFeedback => feedback != null;
 
   Future<void> init(
     TextEditingController inputController,
   ) async {
     this.inputController = inputController;
 
-    final modelRes = await api.models();
+    final modelRes = await A.api.models();
     if (modelRes.value != null) {
       modelInfos = modelRes.value!;
     }
 
-    final infoRes = await api.info();
+    final infoRes = await A.api.info();
     if (infoRes.value != null) {
       backendInfo = infoRes.value!;
     }
@@ -97,7 +101,7 @@ class HomeModel extends BaseModel {
     input.clear();
     notifyListeners();
     final inputLines = inputString.trimRight().split("\n").toList();
-    final result = await api.runPipeline(
+    final result = await A.api.runPipeline(
       inputLines,
       model!,
       sc,
@@ -108,9 +112,18 @@ class HomeModel extends BaseModel {
       input = inputLines;
       _inputBytes = numBytes(inputString);
     } else {
-      messages.add(errorMessageFromApiResult(result));
+      messages.add(A.errorMessageFromApiResult(result));
     }
     _waiting = false;
     notifyListeners();
+  }
+
+  Future<bool> giveFeedback(A.Feedback feedback) async {
+    if (!hasResults || !output!.hasSparql) return false;
+    return await A.api.feedback(
+      output!.input.firstOrNull ?? "",
+      output!.output.firstOrNull ?? "",
+      feedback,
+    );
   }
 }

@@ -3,7 +3,7 @@ import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
-import 'package:webapp/api.dart';
+import 'package:webapp/api.dart' as A;
 import 'package:webapp/base_view.dart';
 import 'package:webapp/colors.dart';
 import 'package:webapp/components/links.dart';
@@ -314,7 +314,7 @@ class _HomeViewState extends State<HomeView> {
             child: SizedBox(
               width: 160,
               child: Image.network(
-                "${api.webBaseURL}"
+                "${A.api.webBaseURL}"
                 "/assets/images/logo.png",
               ),
             ),
@@ -411,15 +411,14 @@ class _HomeViewState extends State<HomeView> {
                 ),
                 IconButton(
                     icon: Icon(
-                      model.sc
-                          ? Icons.spellcheck
-                          : Icons.spellcheck_outlined,
+                      model.sc ? Icons.spellcheck : Icons.spellcheck_outlined,
                     ),
-                    tooltip: "${model.sc ? "Disable" : "Enable"} spell checking",
+                    tooltip:
+                        "${model.sc ? "Disable" : "Enable"} spell checking",
                     splashRadius: 16,
                     onPressed: () {
                       setState(
-                            () {
+                        () {
                           model.sc = !model.sc;
                         },
                       );
@@ -510,7 +509,7 @@ class _HomeViewState extends State<HomeView> {
           child: ExpansionTile(
             initiallyExpanded: false,
             controlAffinity: ListTileControlAffinity.leading,
-            title: const Text("Detailed outputs"),
+            title: const Text("Detailed information"),
             childrenPadding: const EdgeInsets.symmetric(
               vertical: 8,
               horizontal: 16,
@@ -523,7 +522,7 @@ class _HomeViewState extends State<HomeView> {
                 color: uniBlue,
               ),
               const SizedBox(height: 8),
-              Text(model.output!.input.join("\n")),
+              SelectableText(model.output!.input.join("\n")),
               const SizedBox(height: 16),
               const Text("Output"),
               const Divider(
@@ -531,7 +530,7 @@ class _HomeViewState extends State<HomeView> {
                 color: uniBlue,
               ),
               const SizedBox(height: 8),
-              Text(model.output!.output.join("\n")),
+              SelectableText(model.output!.output.join("\n")),
               if (model.output!.hasSparql) ...[
                 const SizedBox(height: 16),
                 const Text("SPARQL"),
@@ -540,7 +539,7 @@ class _HomeViewState extends State<HomeView> {
                   color: uniBlue,
                 ),
                 const SizedBox(height: 8),
-                Text(model.output!.sparql!.join("\n")),
+                SelectableText(model.output!.sparql!.join("\n")),
               ],
               const SizedBox(height: 8),
             ],
@@ -551,22 +550,107 @@ class _HomeViewState extends State<HomeView> {
           margin: EdgeInsets.zero,
           elevation: 2,
           child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: model.output!.hasExecution
-                ? resultTable(model.output!.execution!)
-                : const Text("No execution"),
+            padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                model.output!.hasExecution
+                    ? resultTable(model.output!.execution!)
+                    : const Text("No execution"),
+                const SizedBox(height: 8),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    const Flexible(
+                      child: Text(
+                        "Is this output helpful to answer your question?",
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: uniDarkGray,
+                        ),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      tooltip: "Helpful",
+                      iconSize: 12,
+                      splashRadius: 12,
+                      visualDensity: VisualDensity.compact,
+                      icon: Icon(
+                        Icons.thumb_up_outlined,
+                        color: model.feedback == A.Feedback.helpful
+                            ? uniBlue
+                            : null,
+                      ),
+                      onPressed: model.gaveFeedback
+                          ? null
+                          : () async {
+                              final success = await model.giveFeedback(
+                                A.Feedback.helpful,
+                              );
+                              if (success) {
+                                setState(() {
+                                  model.feedback = A.Feedback.helpful;
+                                });
+                              } else if (mounted) {
+                                showMessage(
+                                    context,
+                                    Message(
+                                      "failed to send feedback",
+                                      Status.warn,
+                                    ));
+                              }
+                            },
+                    ),
+                    IconButton(
+                      tooltip: "Not helpful",
+                      iconSize: 12,
+                      splashRadius: 12,
+                      visualDensity: VisualDensity.compact,
+                      icon: Icon(
+                        Icons.thumb_down_outlined,
+                        color: model.feedback == A.Feedback.unhelpful
+                            ? uniBlue
+                            : null,
+                      ),
+                      onPressed: model.gaveFeedback
+                          ? null
+                          : () async {
+                              final success = await model.giveFeedback(
+                                A.Feedback.unhelpful,
+                              );
+                              if (success) {
+                                setState(() {
+                                  model.feedback = A.Feedback.unhelpful;
+                                });
+                              } else if (mounted) {
+                                showMessage(
+                                    context,
+                                    Message(
+                                      "failed to send feedback",
+                                      Status.warn,
+                                    ));
+                              }
+                            },
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ],
     );
   }
 
-  Widget resultTable(ExecutionResult execution) {
+  Widget resultTable(A.ExecutionResult execution) {
     return Table(
       children: [
         TableRow(
           children: execution.vars
-              .map((v) => Text(
+              .map((v) => SelectableText(
                     v,
                     style: const TextStyle(
                       fontSize: 14,
@@ -587,7 +671,7 @@ class _HomeViewState extends State<HomeView> {
     );
   }
 
-  showInfoDialog(BackendInfo info) async {
+  showInfoDialog(A.BackendInfo info) async {
     const optionPadding = EdgeInsets.symmetric(vertical: 8, horizontal: 8);
     await showDialog(
       context: context,

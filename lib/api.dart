@@ -77,9 +77,11 @@ class Record {
   Widget toWidget() {
     switch (type) {
       case "literal":
-        return Text(
-          value,
-          overflow: TextOverflow.ellipsis,
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: SelectableText(
+            value,
+          ),
         );
       case "uri":
         {
@@ -119,6 +121,17 @@ class ExecutionResult {
     this.vars,
     this.results,
   );
+}
+
+enum Feedback { helpful, unhelpful }
+
+String feedbackToString(Feedback feedback) {
+  switch (feedback) {
+    case Feedback.helpful:
+      return "helpful";
+    case Feedback.unhelpful:
+      return "unhelpful";
+  }
 }
 
 class Api {
@@ -202,6 +215,29 @@ class Api {
       );
     } catch (e) {
       return ApiResult(500, message: "internal error: $e");
+    }
+  }
+
+  Future<bool> feedback(
+    String question,
+    String sparql,
+    Feedback feedback,
+  ) async {
+    try {
+      final data = {
+        "question": question,
+        "sparql": sparql,
+        "feedback": feedbackToString(feedback),
+      };
+      debugPrint("data: $data");
+      final res = await http.post(
+        Uri.parse("$_baseURL/feedback"),
+        body: jsonEncode(data),
+        headers: {"Content-Type": "application/json"},
+      );
+      return res.statusCode == 200;
+    } catch (_) {
+      return false;
     }
   }
 
