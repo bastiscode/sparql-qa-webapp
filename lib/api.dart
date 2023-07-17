@@ -76,13 +76,6 @@ class Record {
 
   Widget toWidget() {
     switch (type) {
-      case "literal":
-        return SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: SelectableText(
-            value,
-          ),
-        );
       case "uri":
         {
           final name = value.split("/").last;
@@ -105,9 +98,12 @@ class Record {
           );
         }
       default:
-        return Text(
-          value,
-          overflow: TextOverflow.ellipsis,
+        // default case, includes literal
+        return SingleChildScrollView(
+          scrollDirection: Axis.horizontal,
+          child: SelectableText(
+            value,
+          ),
         );
     }
   }
