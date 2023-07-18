@@ -370,10 +370,11 @@ class _HomeViewState extends State<HomeView> {
             border: const OutlineInputBorder(),
             hintText: "Enter your question",
             helperText: model.hasResults
-                ? formatClientBackendRuntimes(
+                ? formatRuntime(
                     model.output!.runtime,
                   )
                 : null,
+            helperMaxLines: 2,
             suffixIcon: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
@@ -582,7 +583,7 @@ class _HomeViewState extends State<HomeView> {
                         Icons.thumb_up_outlined,
                         color: model.feedback == A.Feedback.helpful
                             ? uniBlue
-                            : null,
+                            : uniDarkGray,
                       ),
                       onPressed: model.gaveFeedback
                           ? null
@@ -613,7 +614,7 @@ class _HomeViewState extends State<HomeView> {
                         Icons.thumb_down_outlined,
                         color: model.feedback == A.Feedback.unhelpful
                             ? uniBlue
-                            : null,
+                            : uniDarkGray,
                       ),
                       onPressed: model.gaveFeedback
                           ? null

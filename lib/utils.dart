@@ -25,7 +25,9 @@ String formatB(double b) {
   }
 }
 
-String formatClientBackendRuntimes(Runtime runtime) {
-  return "Took ${formatS(runtime.clientS)} in total, "
+String formatRuntime(Runtime runtime) {
+  String s =  "Took ${formatS(runtime.clientS)} in total, "
       "thereof ${formatS(runtime.backendS)} in the backend";
+  if (runtime.executionS == null) return s;
+  return "$s and ${formatS(runtime.executionS!)} executing SPARQL";
 }

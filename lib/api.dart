@@ -40,11 +40,21 @@ class Runtime {
   int b;
   double backendS;
   double clientS;
+  double? executionS;
 
-  Runtime(this.b, this.backendS, this.clientS);
+  Runtime(this.b, this.backendS, this.clientS, {this.executionS});
 
-  static Runtime fromJson(dynamic json, double clientS) {
-    return Runtime(json["b"], json["s"], clientS);
+  static Runtime fromJson(
+    dynamic json,
+    double clientS,
+    double? executionS,
+  ) {
+    return Runtime(
+      json["b"],
+      json["s"],
+      clientS,
+      executionS: executionS,
+    );
   }
 }
 
@@ -71,21 +81,25 @@ class ModelOutput {
 class Record {
   String type;
   String value;
+  String? label;
 
-  Record(this.type, this.value);
+  Record(this.type, this.value, {this.label});
 
   Widget toWidget() {
     switch (type) {
       case "uri":
         {
-          final name = value.split("/").last;
+          String val = value.split("/").last;
+          if (label != null) {
+            val = "$label ($val)";
+          }
           return Row(
             children: [
               MouseRegion(
                 cursor: SystemMouseCursors.click,
                 child: GestureDetector(
                   child: Text(
-                    name,
+                    val,
                     style: const TextStyle(color: uniBlue),
                     overflow: TextOverflow.ellipsis,
                   ),
@@ -102,7 +116,7 @@ class Record {
         return SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: SelectableText(
-            value,
+            label ?? value,
           ),
         );
     }
@@ -117,6 +131,8 @@ class ExecutionResult {
     this.vars,
     this.results,
   );
+
+  int get length => results.length;
 }
 
 enum Feedback { helpful, unhelpful }
@@ -225,7 +241,6 @@ class Api {
         "sparql": sparql,
         "feedback": feedbackToString(feedback),
       };
-      debugPrint("data: $data");
       final res = await http.post(
         Uri.parse("$_baseURL/feedback"),
         body: jsonEncode(data),
@@ -296,6 +311,35 @@ class Api {
     );
   }
 
+  Future<void> addLabels(
+    ExecutionResult ex, {
+    String lang = "en",
+  }) async {
+    final entRegex = RegExp(r"^http://www.wikidata.org/entity/Q\d+$");
+    for (final vr in ex.vars) {
+      final val = ex.results.firstOrNull?[vr]?.value;
+      if (val == null || !entRegex.hasMatch(val)) continue;
+      final valStr = ex.results.map((items) {
+        final val = items[vr]!.value.split("/").last;
+        return "wd:$val";
+      }).join(" ");
+      final labelRes = await execute(
+        "PREFIX wd: <http://www.wikidata.org/entity/> "
+        "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> "
+        "SELECT ?${vr}Label "
+        "WHERE { "
+        "VALUES ?$vr { $valStr } "
+        "OPTIONAL { ?$vr rdfs:label ?${vr}Label "
+        "FILTER(LANG(?${vr}Label) = \"$lang\") "
+        "}}",
+      );
+      if (labelRes.statusCode != 200) continue;
+      for (final (i, rec) in labelRes.value!.results.indexed) {
+        ex.results[i][vr]?.label = rec["${vr}Label"]?.value;
+      }
+    }
+  }
+
   Future<ApiResult<dynamic>> _post(
     String url,
     dynamic data,
@@ -317,6 +361,7 @@ class Api {
     String model,
     bool correctFirst,
     bool highQuality,
+    bool withLabels,
   ) async {
     try {
       final stop = Stopwatch()..start();
@@ -348,7 +393,9 @@ class Api {
       }
       List<String>? sparql = res.value["sparql"]?.cast<String>();
       ExecutionResult? execution;
+      double? executionS;
       if (sparql != null) {
+        final exStop = Stopwatch()..start();
         assert(sparql.length == 1);
         final res = await execute(sparql.first);
         if (res.statusCode != 200) {
@@ -358,6 +405,10 @@ class Api {
           );
         }
         execution = res.value!;
+        if (withLabels) {
+          await addLabels(execution);
+        }
+        executionS = exStop.elapsedMicroseconds / 1e6;
       }
       final output = ModelOutput(
         input,
@@ -365,6 +416,7 @@ class Api {
         Runtime.fromJson(
           res.value["runtime"],
           stop.elapsedMicroseconds / 1e6,
+          executionS,
         ),
         sparql: sparql,
         execution: execution,

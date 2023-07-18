@@ -53,9 +53,11 @@ class HomeModel extends BaseModel {
   bool sc = false;
 
   bool hq = true;
-  
+
+  bool lbl = true;
+
   A.Feedback? feedback;
-  
+
   bool get gaveFeedback => feedback != null;
 
   Future<void> init(
@@ -106,6 +108,7 @@ class HomeModel extends BaseModel {
       model!,
       sc,
       hq,
+      lbl,
     );
     if (result.statusCode == 200) {
       output = result.value!;
