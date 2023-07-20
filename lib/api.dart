@@ -312,29 +312,36 @@ class Api {
   }
 
   Future<void> addLabels(
+    String sparql,
     ExecutionResult ex, {
     String lang = "en",
   }) async {
     final entRegex = RegExp(r"^http://www.wikidata.org/entity/Q\d+$");
-    for (final vr in ex.vars) {
+    final entVars = ex.vars.where((vr) {
       final val = ex.results.firstOrNull?[vr]?.value;
-      if (val == null || !entRegex.hasMatch(val)) continue;
-      final valStr = ex.results.map((items) {
-        final val = items[vr]!.value.split("/").last;
-        return "wd:$val";
-      }).join(" ");
-      final labelRes = await execute(
-        "PREFIX wd: <http://www.wikidata.org/entity/> "
-        "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> "
-        "SELECT ?${vr}Label "
-        "WHERE { "
-        "VALUES ?$vr { $valStr } "
-        "OPTIONAL { ?$vr rdfs:label ?${vr}Label "
-        "FILTER(LANG(?${vr}Label) = \"$lang\") "
-        "}}",
-      );
-      if (labelRes.statusCode != 200) continue;
-      for (final (i, rec) in labelRes.value!.results.indexed) {
+      return val != null && entRegex.hasMatch(val);
+    }).toList();
+    final entLabelVarsStr = entVars.map((vr) => "?${vr}Label").join(" ");
+    final filterLabelStr = entVars.map((vr) {
+      return "OPTIONAL { ?$vr rdfs:label ?${vr}Label "
+          "FILTER(LANG(?${vr}Label) = \"$lang\") }";
+    }).join(" ");
+    final pfxRegex = RegExp(
+      r"(prefix\s+\S+:\s*<.+>)",
+      dotAll: true,
+      caseSensitive: false,
+    );
+    final sparqlPrefixes =
+        pfxRegex.allMatches(sparql).map((m) => m.group(1)).join(" ");
+    final subSparql = sparql.replaceAll(pfxRegex, "");
+    final labelRes = await execute(
+      "PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#> "
+      "$sparqlPrefixes "
+      "SELECT $entLabelVarsStr WHERE { { $subSparql } $filterLabelStr }",
+    );
+    if (labelRes.statusCode != 200) return;
+    for (final (i, rec) in labelRes.value!.results.indexed) {
+      for (final vr in entVars) {
         ex.results[i][vr]?.label = rec["${vr}Label"]?.value;
       }
     }
@@ -406,7 +413,7 @@ class Api {
         }
         execution = res.value!;
         if (withLabels) {
-          await addLabels(execution);
+          await addLabels(sparql.first, execution);
         }
         executionS = exStop.elapsedMicroseconds / 1e6;
       }

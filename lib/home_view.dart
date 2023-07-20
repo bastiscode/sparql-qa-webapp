@@ -369,11 +369,8 @@ class _HomeViewState extends State<HomeView> {
           decoration: InputDecoration(
             border: const OutlineInputBorder(),
             hintText: "Enter your question",
-            helperText: model.hasResults
-                ? formatRuntime(
-                    model.output!.runtime,
-                  )
-                : null,
+            helperText:
+                model.hasResults ? formatRuntime(model.output!.runtime) : null,
             helperMaxLines: 2,
             suffixIcon: Row(
               mainAxisSize: MainAxisSize.min,
@@ -534,7 +531,31 @@ class _HomeViewState extends State<HomeView> {
               SelectableText(model.output!.output.join("\n")),
               if (model.output!.hasSparql) ...[
                 const SizedBox(height: 16),
-                const Text("SPARQL"),
+                Row(
+                  children: [
+                    const Text("SPARQL"),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      onPressed: () async {
+                        final sparqlEnc = Uri.encodeQueryComponent(
+                          formatSparql(
+                            model.output!.sparql!.first,
+                          ),
+                        );
+                        await launchOrMessage(
+                          "https://qlever.cs.uni-freiburg.de/"
+                          "wikidata/?query=$sparqlEnc",
+                        )();
+                      },
+                      tooltip: "View in QLever",
+                      splashRadius: 16,
+                      icon: const Icon(
+                        Icons.open_in_new,
+                        size: 16,
+                      ),
+                    ),
+                  ],
+                ),
                 const Divider(
                   height: 2,
                   color: uniBlue,
@@ -556,9 +577,20 @@ class _HomeViewState extends State<HomeView> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                model.output!.hasExecution
-                    ? resultTable(model.output!.execution!)
-                    : const Text("No execution"),
+                ...model.output!.hasExecution
+                    ? [
+                        Text(
+                          "${model.output!.execution!.results.length} results",
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: uniDarkGray,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        const SizedBox(height: 8),
+                        resultTable(model.output!.execution!)
+                      ]
+                    : [const Text("No execution")],
                 const SizedBox(height: 8),
                 Row(
                   mainAxisSize: MainAxisSize.min,
@@ -646,7 +678,10 @@ class _HomeViewState extends State<HomeView> {
     );
   }
 
-  Widget resultTable(A.ExecutionResult execution) {
+  Widget resultTable(
+    A.ExecutionResult execution, {
+    int topK = 100,
+  }) {
     return Table(
       children: [
         TableRow(
@@ -661,7 +696,7 @@ class _HomeViewState extends State<HomeView> {
                   ))
               .toList(),
         ),
-        ...execution.results.map((result) {
+        ...execution.results.take(topK).map((result) {
           return TableRow(
             children: execution.vars
                 .map((v) => (result[v]?.toWidget() ?? const Text("-")))
