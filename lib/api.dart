@@ -411,7 +411,7 @@ class Api {
         executionS = exStop.elapsedMicroseconds / 1e6;
       }
       final output = ModelOutput(
-        input,
+        res.value["input"].cast<String>(),
         res.value["raw"].cast<String>(),
         Runtime.fromJson(
           res.value["runtime"],
