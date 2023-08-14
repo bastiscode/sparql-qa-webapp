@@ -497,6 +497,7 @@ class _HomeViewState extends State<HomeView> {
   }
 
   Widget outputField(HomeModel model) {
+    final output = model.output!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -520,7 +521,7 @@ class _HomeViewState extends State<HomeView> {
                 color: uniBlue,
               ),
               const SizedBox(height: 8),
-              SelectableText(model.output!.input.join("\n")),
+              SelectableText(output.input.join("\n")),
               const SizedBox(height: 16),
               const Text("Output"),
               const Divider(
@@ -528,8 +529,8 @@ class _HomeViewState extends State<HomeView> {
                 color: uniBlue,
               ),
               const SizedBox(height: 8),
-              SelectableText(model.output!.output.join("\n")),
-              if (model.output!.hasSparql) ...[
+              SelectableText(output.output.join("\n")),
+              if (output.hasSparql) ...[
                 const SizedBox(height: 16),
                 Row(
                   children: [
@@ -539,7 +540,7 @@ class _HomeViewState extends State<HomeView> {
                       onPressed: () async {
                         final sparqlEnc = Uri.encodeQueryComponent(
                           formatSparql(
-                            model.output!.sparql!.first,
+                            output.sparql!.first,
                           ),
                         );
                         await launchOrMessage(
@@ -561,7 +562,7 @@ class _HomeViewState extends State<HomeView> {
                   color: uniBlue,
                 ),
                 const SizedBox(height: 8),
-                SelectableText(model.output!.sparql!.join("\n")),
+                SelectableText(output.sparql!.join("\n")),
               ],
               const SizedBox(height: 8),
             ],
@@ -577,10 +578,11 @@ class _HomeViewState extends State<HomeView> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                ...model.output!.hasExecution
+                ...output.hasExecution
                     ? [
                         Text(
-                          "${model.output!.execution!.results.length} results",
+                          "${output.execution!.results.length} result"
+                          "${output.execution!.results.length != 1 ? "s" : ""}",
                           style: const TextStyle(
                             fontSize: 12,
                             color: uniDarkGray,
@@ -588,7 +590,7 @@ class _HomeViewState extends State<HomeView> {
                           overflow: TextOverflow.ellipsis,
                         ),
                         const SizedBox(height: 8),
-                        resultTable(model.output!.execution!)
+                        resultTable(output.execution!)
                       ]
                     : [const Text("No execution")],
                 const SizedBox(height: 8),
