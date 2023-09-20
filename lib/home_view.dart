@@ -58,7 +58,7 @@ class _HomeViewState extends State<HomeView> {
       try {
         success = await launchUrl(Uri.parse(address));
       } finally {
-        if (!success) {
+        if (!success && mounted) {
           showMessage(
             context,
             Message("could not open $address", Status.error),
@@ -162,10 +162,9 @@ class _HomeViewState extends State<HomeView> {
             spacing: 8,
             runSpacing: 8,
             children: links
-                .map((l) => LinkChip(
-                      l,
-                      launchOrMessage(l.url),
-                    ))
+                .map(
+                  (l) => LinkChip(l, launchOrMessage(l.url)),
+                )
                 .toList(),
           ),
         ],
@@ -184,8 +183,11 @@ class _HomeViewState extends State<HomeView> {
         infoText += " (${info.tags.join(', ')})";
       }
     }
-    final validPresets =
-        presets.where((preset) => model.isValidPreset(preset)).toList();
+    final validPresets = presets
+        .where(
+          (preset) => model.isValidPreset(preset),
+        )
+        .toList();
     return Card(
       margin: EdgeInsets.zero,
       elevation: 2,
@@ -262,11 +264,9 @@ class _HomeViewState extends State<HomeView> {
             ).toList(),
             onChanged: (String? modelName) {
               if (modelName == null) return;
-              setState(
-                () {
-                  model.model = modelName;
-                },
-              );
+              setState(() {
+                model.model = modelName;
+              });
             },
           ),
           const SizedBox(height: 8),
@@ -409,7 +409,9 @@ class _HomeViewState extends State<HomeView> {
                 ),
                 IconButton(
                     icon: Icon(
-                      model.sc ? Icons.spellcheck : Icons.spellcheck_outlined,
+                      model.sc
+                          ? Icons.text_increase_outlined
+                          : Icons.text_decrease_outlined,
                     ),
                     tooltip:
                         "${model.sc ? "Disable" : "Enable"} spell checking",
@@ -515,6 +517,18 @@ class _HomeViewState extends State<HomeView> {
             ),
             expandedCrossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              if (output.corrected != null) ...[
+                const Text("Spelling correction"),
+                const Divider(
+                  height: 2,
+                  color: uniBlue,
+                ),
+                const SizedBox(height: 8),
+                SelectableText(
+                  "${output.raw.join("\n")} \u2192 ${output.corrected!.join("\n")}",
+                ),
+                const SizedBox(height: 16),
+              ],
               const Text("Input"),
               const Divider(
                 height: 2,
@@ -529,7 +543,14 @@ class _HomeViewState extends State<HomeView> {
                 color: uniBlue,
               ),
               const SizedBox(height: 8),
-              SelectableText(output.output.join("\n")),
+              SelectableText(
+                output.output
+                    .map((o) => processOutput(
+                          o,
+                          output.specialTokens ?? [],
+                        ))
+                    .join("\n"),
+              ),
               if (output.hasSparql) ...[
                 const SizedBox(height: 16),
                 Row(

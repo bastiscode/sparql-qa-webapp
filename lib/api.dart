@@ -59,9 +59,12 @@ class Runtime {
 }
 
 class ModelOutput {
+  List<String> raw;
   List<String> input;
   List<String> output;
+  List<String>? corrected;
   List<String>? sparql;
+  List<dynamic>? specialTokens;
   ExecutionResult? execution;
   Runtime runtime;
 
@@ -70,10 +73,13 @@ class ModelOutput {
   bool get hasExecution => execution != null;
 
   ModelOutput(
+    this.raw,
     this.input,
     this.output,
     this.runtime, {
+    this.corrected,
     this.sparql,
+    this.specialTokens,
     this.execution,
   });
 }
@@ -167,7 +173,7 @@ class Api {
         _baseURL = "$href/$rel";
       } else {
         // for local development use localhost
-        _baseURL = "http://localhost:40000/$rel";
+        _baseURL = "http://localhost:8224/$rel";
       }
       _webBaseURL = href;
     } else {
@@ -372,6 +378,7 @@ class Api {
   ) async {
     try {
       final stop = Stopwatch()..start();
+      List<String>? corrected;
       if (correctFirst) {
         final res = await correct(input);
         if (res.statusCode != 200) {
@@ -380,10 +387,10 @@ class Api {
             message: "correction failed: ${res.message}",
           );
         }
-        input = res.value!;
+        corrected = res.value!;
       }
       var data = {
-        "questions": input,
+        "questions": corrected ?? input,
         "model": model,
         "search_strategy": highQuality ? "beam" : "greedy",
         "beam_width": 5,
@@ -418,6 +425,7 @@ class Api {
         executionS = exStop.elapsedMicroseconds / 1e6;
       }
       final output = ModelOutput(
+        input,
         res.value["input"].cast<String>(),
         res.value["raw"].cast<String>(),
         Runtime.fromJson(
@@ -425,7 +433,9 @@ class Api {
           stop.elapsedMicroseconds / 1e6,
           executionS,
         ),
+        corrected: corrected,
         sparql: sparql,
+        specialTokens: res.value["special_tokens"],
         execution: execution,
       );
       return ApiResult(200, value: output);

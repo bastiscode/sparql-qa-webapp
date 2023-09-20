@@ -56,9 +56,15 @@ String formatSparql(String sparql) {
       } else {
         currOpen--;
       }
-      debugPrint("$currOpen");
       return "\n${m.group(1)!.trim()}\n${"  " * currOpen}";
     },
   );
   return sparql;
+}
+
+String processOutput(String output, List<dynamic> specialTokens) {
+  for (final special in specialTokens) {
+    output = output.replaceAll(special["token"], special["replacement"]);
+  }
+  return output;
 }

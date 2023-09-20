@@ -17,7 +17,6 @@ class HomeModel extends BaseModel {
   String? model;
   A.ModelOutput? output;
 
-  List<String> input = [];
   int _inputBytes = 0;
 
   int get inputBytes => _inputBytes;
@@ -100,7 +99,6 @@ class HomeModel extends BaseModel {
   Future<void> runPipeline(String inputString) async {
     _waiting = true;
     output = null;
-    input.clear();
     notifyListeners();
     final inputLines = inputString.trimRight().split("\n").toList();
     final result = await A.api.runPipeline(
@@ -112,7 +110,8 @@ class HomeModel extends BaseModel {
     );
     if (result.statusCode == 200) {
       output = result.value!;
-      input = inputLines;
+      final corrected = output!.corrected?.firstOrNull;
+      inputController.text = corrected ?? inputController.text;
       _inputBytes = numBytes(inputString);
     } else {
       messages.add(A.errorMessageFromApiResult(result));

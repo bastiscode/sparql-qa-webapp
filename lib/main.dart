@@ -37,6 +37,7 @@ class SparqlQaApp extends StatelessWidget {
         inputDecorationTheme: const InputDecorationTheme(
           border: OutlineInputBorder(),
         ),
+        materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
         fontFamily: "Roboto",
       ),
       home: const HomeView(),
