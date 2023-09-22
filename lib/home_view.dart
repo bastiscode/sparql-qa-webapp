@@ -544,12 +544,7 @@ class _HomeViewState extends State<HomeView> {
               ),
               const SizedBox(height: 8),
               SelectableText(
-                output.output
-                    .map((o) => processOutput(
-                          o,
-                          output.specialTokens ?? [],
-                        ))
-                    .join("\n"),
+                output.output.join("\n"),
               ),
               if (output.hasSparql) ...[
                 const SizedBox(height: 16),
@@ -560,9 +555,7 @@ class _HomeViewState extends State<HomeView> {
                     IconButton(
                       onPressed: () async {
                         final sparqlEnc = Uri.encodeQueryComponent(
-                          formatSparql(
-                            output.sparql!.first,
-                          ),
+                          output.sparql!.first,
                         );
                         await launchOrMessage(
                           "https://qlever.cs.uni-freiburg.de/"
@@ -583,7 +576,9 @@ class _HomeViewState extends State<HomeView> {
                   color: uniBlue,
                 ),
                 const SizedBox(height: 8),
-                SelectableText(output.sparql!.join("\n")),
+                SelectableText(
+                  output.sparql!.join("\n"),
+                ),
               ],
               const SizedBox(height: 8),
             ],
