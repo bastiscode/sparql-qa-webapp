@@ -422,7 +422,7 @@ class Api {
           );
         }
         execution = res.value!;
-        if (withLabels) {
+        if (false && withLabels) {
           await addLabels(sparql.first, execution);
         }
         executionS = exStop.elapsedMicroseconds / 1e6;
