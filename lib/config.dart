@@ -40,7 +40,6 @@ const Map<String, List<String>> examples = {
     "What does Angela Merkel do?",
     "How old is Barack Obama?",
     "In which city is Sanssouci?",
-    "On which continent is Bangladesh?",
     "What type of movie is Interstellar by Christopher Nolan?"
   ],
 };
