@@ -301,7 +301,7 @@ class Api {
     for (final binding in json["results"]["bindings"]) {
       Map<String, Record?> result = {};
       for (final vr in vars) {
-        final vrBinding = binding[vr];
+        final vrBinding = binding?[vr];
         if (vrBinding == null) {
           result[vr] = null;
           continue;
