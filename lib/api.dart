@@ -173,7 +173,7 @@ class Api {
         _baseURL = "$href/$rel";
       } else {
         // for local development use localhost
-        _baseURL = "http://localhost:8224/$rel";
+        _baseURL = "http://localhost:40000/$rel";
       }
       _webBaseURL = href;
     } else {
@@ -284,16 +284,17 @@ class Api {
   }
 
   Future<ApiResult<ExecutionResult>> execute(String sparql) async {
-    final sparqlEnc = Uri.encodeQueryComponent(sparql);
-    final res = await http.get(
-      Uri.parse(
-        "https://qlever.cs.uni-freiburg.de/api/wikidata?query=$sparqlEnc",
-      ),
+    final res = await http.post(
+      Uri.parse(qleverEndpoint),
+      body: sparql,
+      headers: {"Content-type": "application/sparql-query"},
     );
     final json = jsonDecode(res.body);
     if (res.statusCode != 200) {
-      return ApiResult(res.statusCode,
-          message: json["exception"] ?? "unknown exception");
+      return ApiResult(
+        res.statusCode,
+        message: json["exception"] ?? "unknown exception",
+      );
     }
     List<String> vars = json["head"]["vars"].cast<String>();
     List<Map<String, Record?>> results = [];
@@ -394,6 +395,8 @@ class Api {
         "model": model,
         "search_strategy": highQuality ? "beam" : "greedy",
         "beam_width": 5,
+        "subgraph_constraining": highQuality,
+        "qlever_endpoint": qleverEndpoint
       };
       final res = await _post(
         "$_baseURL/answer",

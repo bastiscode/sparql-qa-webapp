@@ -7,9 +7,11 @@ import 'package:webapp/components/presets.dart';
 const String title = "SPARQL question answering";
 const String description =
     "Answer natural language questions over knowledge graphs";
-const String lastUpdated = "Jul. 4, 2023";
+const String lastUpdated = "Dec. 7, 2023";
 
 const String baseURL = "/api";
+const String qleverEndpoint =
+    "https://qlever.cs.uni-freiburg.de/api/wikidata-sebastian";
 
 // display links to additional resources on the website,
 // will be shown as action chips below the title bar
@@ -37,6 +39,7 @@ const Map<String, List<String>> examples = {
     "Where was Albert Einstein born?",
     "What does Angela Merkel do?",
     "How old is Barack Obama?",
+    "In which city is Sanssouci?",
     "On which continent is Bangladesh?",
     "What type of movie is Interstellar by Christopher Nolan?"
   ],

@@ -408,36 +408,35 @@ class _HomeViewState extends State<HomeView> {
                       : null,
                 ),
                 IconButton(
-                    icon: Icon(
-                      model.sc
-                          ? Icons.text_increase_outlined
-                          : Icons.text_decrease_outlined,
-                    ),
-                    tooltip:
-                        "${model.sc ? "Disable" : "Enable"} spell checking",
-                    splashRadius: 16,
-                    onPressed: () {
-                      setState(
-                        () {
-                          model.sc = !model.sc;
-                        },
-                      );
-                    }),
+                  icon: Icon(
+                    model.sc
+                        ? Icons.text_increase_outlined
+                        : Icons.text_decrease_outlined,
+                  ),
+                  tooltip: "${model.sc ? "Disable" : "Enable"} spell checking",
+                  splashRadius: 16,
+                  onPressed: () {
+                    setState(
+                      () {
+                        model.sc = !model.sc;
+                      },
+                    );
+                  },
+                ),
                 IconButton(
-                    icon: Icon(
-                      model.hq
-                          ? Icons.high_quality
-                          : Icons.high_quality_outlined,
-                    ),
-                    tooltip: "${model.hq ? "Disable" : "Enable"} high quality",
-                    splashRadius: 16,
-                    onPressed: () {
-                      setState(
-                        () {
-                          model.hq = !model.hq;
-                        },
-                      );
-                    }),
+                  icon: Icon(
+                    model.hq ? Icons.high_quality : Icons.high_quality_outlined,
+                  ),
+                  tooltip: "${model.hq ? "Disable" : "Enable"} high quality",
+                  splashRadius: 16,
+                  onPressed: () {
+                    setState(
+                      () {
+                        model.hq = !model.hq;
+                      },
+                    );
+                  },
+                ),
                 if (examples.isNotEmpty)
                   IconButton(
                     onPressed: !model.waiting
@@ -525,7 +524,8 @@ class _HomeViewState extends State<HomeView> {
                 ),
                 const SizedBox(height: 8),
                 SelectableText(
-                  "${output.raw.join("\n")} \u2192 ${output.corrected!.join("\n")}",
+                  "${output.raw.join("\n")} \u2192 "
+                  "${output.corrected!.join("\n")}",
                 ),
                 const SizedBox(height: 16),
               ],
