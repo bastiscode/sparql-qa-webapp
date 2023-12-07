@@ -301,7 +301,10 @@ class Api {
     for (final binding in json["results"]["bindings"]) {
       Map<String, Record?> result = {};
       for (final vr in vars) {
-        final vrBinding = binding?[vr];
+        if (binding == null) {
+          result[vr] == null;
+        }
+        final vrBinding = binding[vr];
         if (vrBinding == null) {
           result[vr] = null;
           continue;
@@ -328,6 +331,7 @@ class Api {
       final val = ex.results.firstOrNull?[vr]?.value;
       return val != null && entRegex.hasMatch(val);
     }).toList();
+    if (entVars.isEmpty) return;
     final entLabelVarsStr = entVars.map((vr) => "?${vr}Label").join(" ");
     final filterLabelStr = entVars.map((vr) {
       return "OPTIONAL { ?$vr rdfs:label ?${vr}Label "
@@ -422,7 +426,7 @@ class Api {
           );
         }
         execution = res.value!;
-        if (false && withLabels) {
+        if (withLabels) {
           await addLabels(sparql.first, execution);
         }
         executionS = exStop.elapsedMicroseconds / 1e6;
