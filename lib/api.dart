@@ -303,6 +303,7 @@ class Api {
       for (final vr in vars) {
         if (binding == null) {
           result[vr] == null;
+          continue;
         }
         final vrBinding = binding[vr];
         if (vrBinding == null) {
